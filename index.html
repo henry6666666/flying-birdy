@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>飞行鸟游戏 | Flappy Bird</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            overflow: hidden;
+            touch-action: manipulation;
+        }
+
+        .game-container {
+            position: relative;
+            width: 100%;
+            max-width: 400px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding: 0 10px;
+        }
+
+        h1 {
+            color: white;
+            font-size: 1.8em;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        .language-selector select {
+            padding: 8px 12px;
+            border: none;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.9);
+            font-size: 0.9em;
+            cursor: pointer;
+        }
+
+        #gameCanvas {
+            width: 100%;
+            height: 500px;
+            background: linear-gradient(to bottom, #87CEEB, #E0F7FF);
+            border-radius: 15px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            display: block;
+        }
+
+        .controls {
+            margin-top: 20px;
+            text-align: center;
+            color: white;
+            font-size: 0.9em;
+            opacity: 0.8;
+        }
+
+        .menu {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            border-radius: 15px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+        }
+
+        .menu h2 {
+            color: white;
+            margin-bottom: 30px;
+            font-size: 2em;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        .menu button {
+            background: linear-gradient(135deg, #FF512F, #F09819);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            margin: 10px 0;
+            font-size: 1.2em;
+            border-radius: 50px;
+            cursor: pointer;
+            width: 80%;
+            max-width: 250px;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .menu button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+        }
+
+        .menu button:active {
+            transform: translateY(-1px);
+        }
+
+        .difficulty-buttons {
+            display: flex;
+            flex-direction: column;
+            width: 80%;
+            max-width: 250px;
+        }
+
+        .settings-menu {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 20px;
+            width: 90%;
+            max-width: 300px;
+        }
+
+        .settings-menu h3 {
+            color: #333;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .setting-item {
+            margin: 15px 0;
+        }
+
+        .setting-item label {
+            display: block;
+            margin-bottom: 5px;
+            color: #333;
+            font-weight: bold;
+        }
+
+        .setting-item select {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 1em;
+        }
+
+        .coming-soon {
+            background: #ffeb3b !important;
+            color: #333 !important;
+            position: relative;
+        }
+
+        .coming-soon::after {
+            content: " 🫓";
+        }
+
+        .score-display {
+            position: absolute;
+            top: 20px;
+            left: 0;
+            width: 100%;
+            text-align: center;
+            color: white;
+            font-size: 3em;
+            font-weight: bold;
+            text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.5);
+            z-index: 5;
+        }
+
+        .game-over {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            border-radius: 15px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+            color: white;
+        }
+
+        .game-over h2 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .game-over p {
+            font-size: 1.5em;
+            margin-bottom: 20px;
+        }
+
+        .back-button {
+            background: #2196F3 !important;
+            margin-top: 10px;
+        }
+
+        @media (max-width: 768px) {
+            .game-container {
+                max-width: 100%;
+                padding: 15px;
+            }
+            
+            #gameCanvas {
+                height: 400px;
+            }
+            
+            h1 {
+                font-size: 1.5em;
+            }
+            
+            .menu h2 {
+                font-size: 1.8em;
+            }
+            
+            .menu button {
+                padding: 12px 25px;
+                font-size: 1.1em;
+            }
+        }
+
+        @media (max-width: 480px) {
+            #gameCanvas {
+                height: 350px;
+            }
+            
+            .header {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .score-display {
+                font-size: 2.5em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="header">
+            <h1 id="game-title">飞行鸟游戏</h1>
+            <div class="language-selector">
+                <select id="languageSelect">
+                    <option value="zh">中文</option>
+                    <option value="en">English</option>
+                    <option value="es">Español</option>
+                    <option value="fr">Français</option>
+                    <option value="de">Deutsch</option>
+                    <option value="ja">日本語</option>
+                    <option value="ko">한국어</option>
+                </select>
+            </div>
+        </div>
+
+        <canvas id="gameCanvas"></canvas>
+        
+        <div class="controls" id="controls">
+            按空格键或点击屏幕让小鸟飞行
+        </div>
+
+        <div class="score-display" id="scoreDisplay">0</div>
+
+        <div class="menu" id="mainMenu">
+            <h2 id="menu-title">飞行鸟游戏</h2>
+            <button id="startBtn">开始游戏</button>
+            <button id="difficultyBtn">选择难度</button>
+            <button id="settingsBtn">设置</button>
+        </div>
+
+        <div class="menu" id="difficultyMenu" style="display: none;">
+            <h2 id="difficulty-title">选择难度</h2>
+            <div class="difficulty-buttons">
+                <button id="easyBtn" data-difficulty="easy">简单模式</button>
+                <button id="normalBtn" data-difficulty="normal">正常模式</button>
+                <button id="hardBtn" data-difficulty="hard">地狱模式</button>
+            </div>
+            <button class="back-button" id="backFromDifficulty">返回</button>
+        </div>
+
+        <div class="menu" id="settingsMenu" style="display: none;">
+            <div class="settings-menu">
+                <h3 id="settings-title">设置</h3>
+                <div class="setting-item">
+                    <label id="game-mode-label">游戏模式</label>
+                    <select id="gameMode">
+                        <option value="endless">无尽模式</option>
+                        <option value="level" disabled>关卡模式 🫓</option>
+                        <option value="time" disabled>时间挑战 🫓</option>
+                    </select>
+                </div>
+                <div class="setting-item">
+                    <label id="sound-label">声音</label>
+                    <select id="soundSetting">
+                        <option value="on">开启</option>
+                        <option value="off">关闭</option>
+                    </select>
+                </div>
+                <button class="back-button" id="backFromSettings" style="width: 100%; margin-top: 20px;">返回</button>
+            </div>
+        </div>
+
+        <div class="game-over" id="gameOverMenu" style="display: none;">
+            <h2 id="game-over-title">游戏结束</h2>
+            <p id="final-score">得分: 0</p>
+            <button id="restartBtn">再玩一次</button>
+            <button class="back-button" id="backToMenu">返回主菜单</button>
+        </div>
+    </div>
+
+    <script>
+        // 多语言文本
+        const translations = {
+            zh: {
+                title: "飞行鸟游戏",
+                menuTitle: "飞行鸟游戏",
+                difficultyTitle: "选择难度",
+                settingsTitle: "设置",
+                startBtn: "开始游戏",
+                difficultyBtn: "选择难度",
+                settingsBtn: "设置",
+                easyBtn: "简单模式",
+                normalBtn: "正常模式",
+                hardBtn: "地狱模式",
+                backBtn: "返回",
+                gameModeLabel: "游戏模式",
+                soundLabel: "声音",
+                on: "开启",
+                off: "关闭",
+                controls: "按空格键或点击屏幕让小鸟飞行",
+                gameOver: "游戏结束",
+                finalScore: "得分",
+                restartBtn: "再玩一次",
+                backToMenu: "返回主菜单"
+            },
+            en: {
+                title: "Flappy Bird",
+                menuTitle: "Flappy Bird",
+                difficultyTitle: "Select Difficulty",
+                settingsTitle: "Settings",
+                startBtn: "Start Game",
+                difficultyBtn: "Select Difficulty",
+                settingsBtn: "Settings",
+                easyBtn: "Easy Mode",
+                normalBtn: "Normal Mode",
+                hardBtn: "Hard Mode",
+                backBtn: "Back",
+                gameModeLabel: "Game Mode",
+                soundLabel: "Sound",
+                on: "On",
+                off: "Off",
+                controls: "Press SPACE or tap screen to fly",
+                gameOver: "Game Over",
+                finalScore: "Score",
+                restartBtn: "Play Again",
+                backToMenu: "Back to Menu"
+            },
+            es: {
+                title: "Pájaro Volador",
+                menuTitle: "Pájaro Volador",
+                difficultyTitle: "Seleccionar Dificultad",
+                settingsTitle: "Configuración",
+                startBtn: "Comenzar Juego",
+                difficultyBtn: "Seleccionar Dificultad",
+                settingsBtn: "Configuración",
+                easyBtn: "Modo Fácil",
+                normalBtn: "Modo Normal",
+                hardBtn: "Modo Difícil",
+                backBtn: "Volver",
+                gameModeLabel: "Modo de Juego",
+                soundLabel: "Sonido",
+                on: "Activado",
+                off: "Desactivado",
+                controls: "Presiona ESPACIO o toca la pantalla para volar",
+                gameOver: "Juego Terminado",
+                finalScore: "Puntuación",
+                restartBtn: "Jugar Otra Vez",
+                backToMenu: "Volver al Menú"
+            },
+            fr: {
+                title: "Oiseau Volant",
+                menuTitle: "Oiseau Volant",
+                difficultyTitle: "Sélectionner la Difficulté",
+                settingsTitle: "Paramètres",
+                startBtn: "Commencer le Jeu",
+                difficultyBtn: "Sélectionner la Difficulté",
+                settingsBtn: "Paramètres",
+                easyBtn: "Mode Facile",
+                normalBtn: "Mode Normal",
+                hardBtn: "Mode Difficile",
+                backBtn: "Retour",
+                gameModeLabel: "Mode de Jeu",
+                soundLabel: "Son",
+                on: "Activé",
+                off: "Désactivé",
+                controls: "Appuyez sur ESPACE ou touchez l'écran pour voler",
+                gameOver: "Jeu Terminé",
+                finalScore: "Score",
+                restartBtn: "Rejouer",
+                backToMenu: "Retour au Menu"
+            },
+            de: {
+                title: "Flattervogel",
+                menuTitle: "Flattervogel",
+                difficultyTitle: "Schwierigkeit Wählen",
+                settingsTitle: "Einstellungen",
+                startBtn: "Spiel Starten",
+                difficultyBtn: "Schwierigkeit Wählen",
+                settingsBtn: "Einstellungen",
+                easyBtn: "Einfacher Modus",
+                normalBtn: "Normaler Modus",
+                hardBtn: "Schwerer Modus",
+                backBtn: "Zurück",
+                gameModeLabel: "Spielmodus",
+                soundLabel: "Sound",
+                on: "An",
+                off: "Aus",
+                controls: "Drücke LEERTASTE oder tippe auf den Bildschirm zum Fliegen",
+                gameOver: "Spiel Vorbei",
+                finalScore: "Punktzahl",
+                restartBtn: "Nochmal Spielen",
+                backToMenu: "Zurück zum Menü"
+            },
+            ja: {
+                title: "フラッピーバード",
+                menuTitle: "フラッピーバード",
+                difficultyTitle: "難易度を選択",
+                settingsTitle: "設定",
+                startBtn: "ゲーム開始",
+                difficultyBtn: "難易度を選択",
+                settingsBtn: "設定",
+                easyBtn: "イージーモード",
+                normalBtn: "ノーマルモード",
+                hardBtn: "ハードモード",
+                backBtn: "戻る",
+                gameModeLabel: "ゲームモード",
+                soundLabel: "サウンド",
+                on: "オン",
+                off: "オフ",
+                controls: "スペースキーまたは画面タップで飛ぶ",
+                gameOver: "ゲームオーバー",
+                finalScore: "スコア",
+                restartBtn: "もう一度遊ぶ",
+                backToMenu: "メニューに戻る"
+            },
+            ko: {
+                title: "플래피 버드",
+                menuTitle: "플래피 버드",
+                difficultyTitle: "난이도 선택",
+                settingsTitle: "설정",
+                startBtn: "게임 시작",
+                difficultyBtn: "난이도 선택",
+                settingsBtn: "설정",
+                easyBtn: "쉬움 모드",
+                normalBtn: "보통 모드",
+                hardBtn: "어려움 모드",
+                backBtn: "뒤로",
+                gameModeLabel: "게임 모드",
+                soundLabel: "소리",
+                on: "켜기",
+                off: "끄기",
+                controls: "스페이스바 또는 화면 탭으로 날기",
+                gameOver: "게임 오버",
+                finalScore: "점수",
+                restartBtn: "다시 하기",
+                backToMenu: "메뉴로 돌아가기"
+            }
+        };
+
+        // 游戏变量
+        let canvas, ctx;
+        let bird, pipes;
+        let gameSpeed = 2;
+        let gravity = 0.5;
+        let score = 0;
+        let gameRunning = false;
+        let currentLanguage = 'zh';
+        let difficulty = 'normal';
+
+        // 初始化游戏
+        function initGame() {
+            canvas = document.getElementById('gameCanvas');
+            ctx = canvas.getContext('2d');
+            
+            // 设置画布尺寸
+            canvas.width = canvas.offsetWidth;
+            canvas.height = canvas.offsetHeight;
+            
+            // 初始化小鸟
+            bird = {
+                x: canvas.width / 3,
+                y: canvas.height / 2,
+                width: 30,
+                height: 24,
+                velocity: 0,
+                jump: -8
+            };
+            
+            // 初始化管道
+            pipes = [];
+            
+            // 重置分数
+            score = 0;
+            updateScore();
+            
+            // 根据难度调整参数
+            switch(difficulty) {
+                case 'easy':
+                    gameSpeed = 1.5;
+                    gravity = 0.4;
+                    bird.jump = -7;
+                    break;
+                case 'normal':
+                    gameSpeed = 2;
+                    gravity = 0.5;
+                    bird.jump = -8;
+                    break;
+                case 'hard':
+                    gameSpeed = 3;
+                    gravity = 0.6;
+                    bird.jump = -9;
+                    break;
+            }
+        }
+
+        // 绘制小鸟
+        function drawBird() {
+            ctx.fillStyle = '#FFD700';
+            ctx.beginPath();
+            ctx.arc(bird.x, bird.y, bird.width / 2, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // 眼睛
+            ctx.fillStyle = 'white';
+            ctx.beginPath();
+            ctx.arc(bird.x + 5, bird.y - 5, 5, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.fillStyle = 'black';
+            ctx.beginPath();
+            ctx.arc(bird.x + 6, bird.y - 5, 2, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // 嘴巴
+            ctx.fillStyle = '#FF8C00';
+            ctx.beginPath();
+            ctx.moveTo(bird.x + 10, bird.y);
+            ctx.lineTo(bird.x + 20, bird.y);
+            ctx.lineTo(bird.x + 10, bird.y + 5);
+            ctx.fill();
+        }
+
+        // 绘制管道
+        function drawPipes() {
+            pipes.forEach(pipe => {
+                ctx.fillStyle = '#2E8B57';
+                
+                // 上管道
+                ctx.fillRect(pipe.x, 0, pipe.width, pipe.topHeight);
+                
+                // 下管道
+                ctx.fillRect(pipe.x, canvas.height - pipe.bottomHeight, pipe.width, pipe.bottomHeight);
+                
+                // 管道帽子
+                ctx.fillStyle = '#228B22';
+                ctx.fillRect(pipe.x - 3, pipe.topHeight - 15, pipe.width + 6, 15);
+                ctx.fillRect(pipe.x - 3, canvas.height - pipe.bottomHeight, pipe.width + 6, 15);
+            });
+        }
+
+        // 更新管道
+        function updatePipes() {
+            // 移动管道
+            pipes.forEach(pipe => {
+                pipe.x -= gameSpeed;
+            });
+            
+            // 移除屏幕外的管道
+            pipes = pipes.filter(pipe => pipe.x + pipe.width > 0);
+            
+            // 添加新管道
+            if (pipes.length === 0 || pipes[pipes.length - 1].x < canvas.width - 300) {
+                const gap = difficulty === 'easy' ? 180 : difficulty === 'normal' ? 160 : 140;
+                const minHeight = 50;
+                const maxHeight = canvas.height - gap - minHeight;
+                
+                const topHeight = Math.floor(Math.random() * (maxHeight - minHeight)) + minHeight;
+                const bottomHeight = canvas.height - topHeight - gap;
+                
+                pipes.push({
+                    x: canvas.width,
+                    width: 60,
+                    topHeight: topHeight,
+                    bottomHeight: bottomHeight,
+                    passed: false
+                });
+            }
+        }
+
+        // 检测碰撞
+        function checkCollision() {
+            // 检测上下边界
+            if (bird.y - bird.width / 2 <= 0 || bird.y + bird.width / 2 >= canvas.height) {
+                return true;
+            }
+            
+            // 检测管道碰撞
+            for (let pipe of pipes) {
+                if (
+                    bird.x + bird.width / 2 > pipe.x && 
+                    bird.x - bird.width / 2 < pipe.x + pipe.width
+                ) {
+                    if (
+                        bird.y - bird.height / 2 < pipe.topHeight || 
+                        bird.y + bird.height / 2 > canvas.height - pipe.bottomHeight
+                    ) {
+                        return true;
+                    }
+                }
+                
+                // 计分
+                if (!pipe.passed && bird.x > pipe.x + pipe.width) {
+                    pipe.passed = true;
+                    score++;
+                    updateScore();
+                }
+            }
+            
+            return false;
+        }
+
+        // 更新分数显示
+        function updateScore() {
+            document.getElementById('scoreDisplay').textContent = score;
+        }
+
+        // 游戏循环
+        function gameLoop() {
+            if (!gameRunning) return;
+            
+            // 清空画布
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // 绘制背景
+            ctx.fillStyle = '#87CEEB';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // 更新小鸟位置
+            bird.velocity += gravity;
+            bird.y += bird.velocity;
+            
+            // 更新管道
+            updatePipes();
+            
+            // 绘制元素
+            drawPipes();
+            drawBird();
+            
+            // 检测碰撞
+            if (checkCollision()) {
+                gameOver();
+                return;
+            }
+            
+            // 继续游戏循环
+            requestAnimationFrame(gameLoop);
+        }
+
+        // 游戏结束
+        function gameOver() {
+            gameRunning = false;
+            document.getElementById('final-score').textContent = 
+                translations[currentLanguage].finalScore + ': ' + score;
+            document.getElementById('gameOverMenu').style.display = 'flex';
+        }
+
+        // 开始游戏
+        function startGame() {
+            initGame();
+            gameRunning = true;
+            document.getElementById('mainMenu').style.display = 'none';
+            document.getElementById('gameOverMenu').style.display = 'none';
+            gameLoop();
+        }
+
+        // 切换语言
+        function changeLanguage() {
+            const select = document.getElementById('languageSelect');
+            currentLanguage = select.value;
+            updateTexts();
+        }
+
+        // 更新所有文本
+        function updateTexts() {
+            const t = translations[currentLanguage];
+            
+            document.getElementById('game-title').textContent = t.title;
+            document.getElementById('menu-title').textContent = t.menuTitle;
+            document.getElementById('difficulty-title').textContent = t.difficultyTitle;
+            document.getElementById('settings-title').textContent = t.settingsTitle;
+            
+            document.getElementById('startBtn').textContent = t.startBtn;
+            document.getElementById('difficultyBtn').textContent = t.difficultyBtn;
+            document.getElementById('settingsBtn').textContent = t.settingsBtn;
+            
+            document.getElementById('easyBtn').textContent = t.easyBtn;
+            document.getElementById('normalBtn').textContent = t.normalBtn;
+            document.getElementById('hardBtn').textContent = t.hardBtn;
+            
+            document.getElementById('backFromDifficulty').textContent = t.backBtn;
+            document.getElementById('backFromSettings').textContent = t.backBtn;
+            document.getElementById('backToMenu').textContent = t.backToMenu;
+            
+            document.getElementById('game-mode-label').textContent = t.gameModeLabel;
+            document.getElementById('sound-label').textContent = t.soundLabel;
+            
+            document.getElementById('controls').textContent = t.controls;
+            document.getElementById('game-over-title').textContent = t.gameOver;
+            document.getElementById('final-score').textContent = t.finalScore + ': 0';
+            document.getElementById('restartBtn').textContent = t.restartBtn;
+            
+            // 更新下拉菜单选项
+            const soundSelect = document.getElementById('soundSetting');
+            soundSelect.options[0].text = t.on;
+            soundSelect.options[1].text = t.off;
+        }
+
+        // 事件监听
+        document.addEventListener('DOMContentLoaded', function() {
+            // 初始化游戏
+            initGame();
+            updateTexts();
+            
+            // 语言切换
+            document.getElementById('languageSelect').addEventListener('change', changeLanguage);
+            
+            // 菜单按钮
+            document.getElementById('startBtn').addEventListener('click', startGame);
+            document.getElementById('difficultyBtn').addEventListener('click', function() {
+                document.getElementById('mainMenu').style.display = 'none';
+                document.getElementById('difficultyMenu').style.display = 'flex';
+            });
+            document.getElementById('settingsBtn').addEventListener('click', function() {
+                document.getElementById('mainMenu').style.display = 'none';
+                document.getElementById('settingsMenu').style.display = 'flex';
+            });
+            
+            // 难度选择
+            document.getElementById('easyBtn').addEventListener('click', function() {
+                difficulty = 'easy';
+                document.getElementById('difficultyMenu').style.display = 'none';
+                document.getElementById('mainMenu').style.display = 'flex';
+            });
+            document.getElementById('normalBtn').addEventListener('click', function() {
+                difficulty = 'normal';
+                document.getElementById('difficultyMenu').style.display = 'none';
+                document.getElementById('mainMenu').style.display = 'flex';
+            });
+            document.getElementById('hardBtn').addEventListener('click', function() {
+                difficulty = 'hard';
+                document.getElementById('difficultyMenu').style.display = 'none';
+                document.getElementById('mainMenu').style.display = 'flex';
+            });
+            
+            // 返回按钮
+            document.getElementById('backFromDifficulty').addEventListener('click', function() {
+                document.getElementById('difficultyMenu').style.display = 'none';
+                document.getElementById('mainMenu').style.display = 'flex';
+            });
+            document.getElementById('backFromSettings').addEventListener('click', function() {
+                document.getElementById('settingsMenu').style.display = 'none';
+                document.getElementById('mainMenu').style.display = 'flex';
+            });
+            
+            // 游戏结束按钮
+            document.getElementById('restartBtn').addEventListener('click', startGame);
+            document.getElementById('backToMenu').addEventListener('click', function() {
+                document.getElementById('gameOverMenu').style.display = 'none';
+                document.getElementById('mainMenu').style.display = 'flex';
+            });
+            
+            // 键盘控制
+            document.addEventListener('keydown', function(e) {
+                if (e.code === 'Space' && gameRunning) {
+                    e.preventDefault();
+                    bird.velocity = bird.jump;
+                }
+            });
+            
+            // 触摸控制
+            canvas.addEventListener('click', function() {
+                if (gameRunning) {
+                    bird.velocity = bird.jump;
+                }
+            });
+            
+            // 窗口大小变化时重新初始化
+            window.addEventListener('resize', function() {
+                if (!gameRunning) {
+                    initGame();
+                }
+            });
+        });
+    </script>
+</body>
+</html>
